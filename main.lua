@@ -13,6 +13,7 @@ local WARNING_MINUTES_ORANGE = 120
 local WARNING_MINUTES_RED = 30
 
 local realityCheckWnd
+local gameExitFrame
 local function displayTimeString(timeInMs)
     local seconds = math.floor(timeInMs / 1000) % 60
     local minutes = math.floor(timeInMs / (1000*60)) % 60  
@@ -26,7 +27,35 @@ local function displayIRLTimeString(timeInMs)
     local minutes = math.floor(timeInMs / (1000*60)) % 60  
     local hours = math.floor(timeInMs / (1000*60*60)) % 24
     
-    return string.format("%02d:%02d", hours, minutes)
+    local irlTimestamp = api.Time:GetLocalTime()
+    local irlTime = api.Time:TimeToDate(irlTimestamp)
+    
+    -- Making a copy of the current time, and then adding the time til cap to it
+    local laborCapTime = {}
+    laborCapTime.year = irlTime.year
+    laborCapTime.month = irlTime.month
+    laborCapTime.day = irlTime.day
+    laborCapTime.minute = irlTime.minute
+    laborCapTime.hour = irlTime.hour
+    laborCapTime.second = irlTime.second
+    laborCapTime.minute = irlTime.minute + minutes
+    if laborCapTime.minute > 59 then
+        laborCapTime.hour = laborCapTime.hour + 1
+        laborCapTime.minute = laborCapTime.minute - 60
+    end 
+    laborCapTime.hour = irlTime.hour + hours
+    if laborCapTime.hour > 23 then
+        laborCapTime.day = laborCapTime.day + 1
+        laborCapTime.hour = laborCapTime.hour - 24
+    end 
+
+    -- Handling tomorrow or today text
+    if irlTime.day < laborCapTime.day then
+        return "Your labor will cap tomorrow at " .. string.format("%02d:%02d", laborCapTime.hour, laborCapTime.minute)
+    else
+        return "Your labor will cap today at " .. string.format("%02d:%02d", laborCapTime.hour, laborCapTime.minute)
+    end 
+    return nil
 end 
 
 local function updateLaborTimer(diff, laborPower)
@@ -39,18 +68,26 @@ local function updateLaborTimer(diff, laborPower)
     -- api.Log:Info(displayTimeString(api.Time:GetLocalTime()) ..  " " .. displayTimeString(msUntilLaborCap))
     -- realityCheckWnd.laborTimer:SetText("Time to Labor Cap: " .. displayTimeString(msUntilLaborCap) .. " (" .. tostring(displayIRLTimeString(localTimeMsWhenCapped)) .. " IRL)")
     realityCheckWnd.laborTimer:SetText("Labor Cap: " .. displayTimeString(msUntilLaborCap))
+    gameExitFrame.logOutLaborTimer:SetText(displayIRLTimeString(msUntilLaborCap))
     if minutesUntilLaborCap > WARNING_MINUTES_ORANGE then 
         ApplyTextColor(realityCheckWnd.laborTimer, FONT_COLOR.LABORPOWER_YELLOW)
+        ApplyTextColor(gameExitFrame.logOutLaborTimer, FONT_COLOR.LABORPOWER_YELLOW)
     elseif minutesUntilLaborCap < WARNING_MINUTES_ORANGE and minutesUntilLaborCap > WARNING_MINUTES_RED then 
         ApplyTextColor(realityCheckWnd.laborTimer, FONT_COLOR.ORANGE)
+        ApplyTextColor(gameExitFrame.logOutLaborTimer, FONT_COLOR.ORANGE)
     elseif minutesUntilLaborCap < WARNING_MINUTES_RED then
         ApplyTextColor(realityCheckWnd.laborTimer, FONT_COLOR.RED)
+        ApplyTextColor(gameExitFrame.logOutLaborTimer, FONT_COLOR.RED)
     end 
 end 
 
 local function updateInGameTimer()
     if realityCheckWnd.inGameTimer ~= nil then 
         local isAm, hour, minute = api.Time:GetGameTime()
+        local irlTimestamp = api.Time:GetLocalTime()
+        local irlTime = api.Time:TimeToDate(irlTimestamp)
+
+        -- Formating the number as 00:00
         minute = math.floor(minute)
         if not isAm then
             hour = hour + 12
@@ -61,7 +98,15 @@ local function updateInGameTimer()
         if minute < 10 then
             minute = "0" .. tostring(minute)
         end 
-        local inGameTimerStr = tostring(hour) .. ":" .. tostring(minute)
+        if irlTime.hour < 10 then 
+            irlTime.hour = "0" .. tostring(irlTime.hour)
+        end 
+        if irlTime.minute < 10 then
+            irlTime.minute = "0" .. tostring(irlTime.minute)
+        end
+        
+
+        local inGameTimerStr = tostring(hour) .. ":" .. tostring(minute) .. " (" .. tostring(irlTime.hour) .. ":" .. tostring(irlTime.minute) .. " IRL)"
         realityCheckWnd.inGameTimer:SetText(inGameTimerStr)
     end 
 end 
@@ -79,7 +124,7 @@ end
 local function OnLoad()
 	local settings = api.GetSettings("reality_check")
     realityCheckWnd = api.Interface:CreateEmptyWindow("realityCheckWnd", "UIParent")
-    
+    gameExitFrame = ADDON:GetContent(UIC.GAME_EXIT_FRAME)
 
     local laborTimer = realityCheckWnd:CreateChildWidget("label", "laborTimer", 0, true)
     laborTimer.style:SetAlign(ALIGN.LEFT)
@@ -94,6 +139,12 @@ local function OnLoad()
     ApplyTextColor(inGameTimer, FONT_COLOR.LABORPOWER_YELLOW)
     inGameTimer.style:SetFontSize(FONT_SIZE.LARGE)
     inGameTimer.style:SetShadow(true)
+
+    local logOutLaborTimer = gameExitFrame:CreateChildWidget("label", "logOutLaborTimer", 0, true)
+    logOutLaborTimer.style:SetAlign(ALIGN.MIDDLE)
+    logOutLaborTimer:AddAnchor("BOTTOM", gameExitFrame, 0, -82)
+    ApplyTextColor(logOutLaborTimer, FONT_COLOR.DEFAULT)
+    logOutLaborTimer:SetText("")
     
     --- Event Handlers for main window
     function realityCheckWnd:OnEvent(event, ...)
@@ -117,6 +168,13 @@ local function OnUnload()
     realityCheckWnd:ReleaseHandler("LABORPOWER_CHANGED")
     realityCheckWnd:Show(false)
     realityCheckWnd = nil
+    gameExitFrame.logOutLaborTimer:Show(false)
+    gameExitFrame.logOutLaborTimer:SetText("")
+    gameExitFrame.logOutLaborTimer = nil
+    gameExitFrame.inGameTimer:Show(false)
+    gameExitFrame.inGameTimer:SetText("")
+    gameExitFrame.inGameTimer = nil
+
 end
 
 reality_check_addon.OnLoad = OnLoad

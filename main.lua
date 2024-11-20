@@ -145,6 +145,7 @@ local function OnLoad()
     logOutLaborTimer:AddAnchor("BOTTOM", gameExitFrame, 0, -82)
     ApplyTextColor(logOutLaborTimer, FONT_COLOR.DEFAULT)
     logOutLaborTimer:SetText("")
+    logOutLaborTimer.style:SetShadow(true)
     
     --- Event Handlers for main window
     function realityCheckWnd:OnEvent(event, ...)

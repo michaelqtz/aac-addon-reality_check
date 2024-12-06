@@ -169,13 +169,16 @@ local function OnUnload()
     realityCheckWnd:ReleaseHandler("LABORPOWER_CHANGED")
     realityCheckWnd:Show(false)
     realityCheckWnd = nil
-    gameExitFrame.logOutLaborTimer:Show(false)
-    gameExitFrame.logOutLaborTimer:SetText("")
-    gameExitFrame.logOutLaborTimer = nil
-    gameExitFrame.inGameTimer:Show(false)
-    gameExitFrame.inGameTimer:SetText("")
-    gameExitFrame.inGameTimer = nil
-
+    if gameExitFrame.logOutLaborTimer ~= nil then
+        gameExitFrame.logOutLaborTimer:Show(false)
+        gameExitFrame.logOutLaborTimer:SetText("")
+        gameExitFrame.logOutLaborTimer = nil    
+    end
+    if gameExitFrame.inGameTimer ~= nil then
+        gameExitFrame.inGameTimer:Show(false)
+        gameExitFrame.inGameTimer:SetText("")
+        gameExitFrame.inGameTimer = nil    
+    end
 end
 
 reality_check_addon.OnLoad = OnLoad

@@ -14,6 +14,7 @@ local WARNING_MINUTES_RED = 30
 
 local realityCheckWnd
 local gameExitFrame
+local whisperSoundWnd
 local function displayTimeString(timeInMs)
     local seconds = math.floor(timeInMs / 1000) % 60
     local minutes = math.floor(timeInMs / (1000*60)) % 60  
@@ -111,6 +112,15 @@ local function updateInGameTimer()
     end 
 end 
 
+local function playSoundOnIncomingWhisper(channel, unit, isHostile, name, message, speakerInChatBound, specifyName, factionName, trialPosition)
+    local playerName = api.Unit:GetUnitNameById(api.Unit:GetUnitId("player"))
+    if playerName ~= name and tostring(channel) == "-3" then
+        whisperSoundWnd:Show(true)
+        whisperSoundWnd:Show(false)
+    end
+    return false
+end 
+
 local inGameTimerTick = 0
 local inGameTimerTickRate = 300
 local function OnUpdate(dt)
@@ -125,6 +135,8 @@ local function OnLoad()
 	local settings = api.GetSettings("reality_check")
     realityCheckWnd = api.Interface:CreateEmptyWindow("realityCheckWnd", "UIParent")
     gameExitFrame = ADDON:GetContent(UIC.GAME_EXIT_FRAME)
+    whisperSoundWnd = api.Interface:CreateEmptyWindow("whisperSoundWnd", "UIParent")
+    whisperSoundWnd:SetSounds("web_play_diary")
 
     local laborTimer = realityCheckWnd:CreateChildWidget("label", "laborTimer", 0, true)
     laborTimer.style:SetAlign(ALIGN.LEFT)
@@ -132,7 +144,7 @@ local function OnLoad()
     ApplyTextColor(laborTimer, FONT_COLOR.LABORPOWER_YELLOW)
     laborTimer.style:SetShadow(true)
     laborTimer:SetText("Labor Cap: Waiting for labor tick...")
-
+    
     local inGameTimer = realityCheckWnd:CreateChildWidget("label", "inGameTimer", 0, true)
     inGameTimer.style:SetAlign(ALIGN.MIDDLE)
     inGameTimer:AddAnchor("TOPRIGHT", "UIParent", -90, 12)
@@ -154,10 +166,14 @@ local function OnLoad()
                 updateLaborTimer(unpack(arg))
             end 
         end
+        if event == "CHAT_MESSAGE" then
+            playSoundOnIncomingWhisper(unpack(arg))
+        end
     end
     realityCheckWnd:SetHandler("OnEvent", realityCheckWnd.OnEvent)
     realityCheckWnd:RegisterEvent("LABORPOWER_CHANGED")
-
+    realityCheckWnd:RegisterEvent("CHAT_MESSAGE")
+    realityCheckWnd:SetExtent(100, 100)
     realityCheckWnd:Show(true)
 	
     api.On("UPDATE", OnUpdate)
@@ -167,8 +183,11 @@ end
 local function OnUnload()
 	api.On("UPDATE", function() return end)
     realityCheckWnd:ReleaseHandler("LABORPOWER_CHANGED")
+    realityCheckWnd:ReleaseHandler("CHAT_MESSAGE")
     realityCheckWnd:Show(false)
+    whisperSoundWnd:Show(false)
     realityCheckWnd = nil
+    whisperSoundWnd = nil
     if gameExitFrame.logOutLaborTimer ~= nil then
         gameExitFrame.logOutLaborTimer:Show(false)
         gameExitFrame.logOutLaborTimer:SetText("")

@@ -112,11 +112,19 @@ local function updateInGameTimer()
     end 
 end 
 
+local whisperOnCooldown = false
+local whisperTimer = 0
+local whisperCooldown = 10000
+
 local function playSoundOnIncomingWhisper(channel, unit, isHostile, name, message, speakerInChatBound, specifyName, factionName, trialPosition)
     local playerName = api.Unit:GetUnitNameById(api.Unit:GetUnitId("player"))
     if playerName ~= name and tostring(channel) == "-3" then
-        whisperSoundWnd:Show(true)
-        whisperSoundWnd:Show(false)
+        if whisperOnCooldown == false then 
+            whisperSoundWnd:Show(true)
+            whisperSoundWnd:Show(false)            
+            whisperOnCooldown = true
+            whisperTimer = 0
+        end
     end
     return false
 end 
@@ -129,6 +137,11 @@ local function OnUpdate(dt)
         inGameTimerTick = 0
     end 
     inGameTimerTick = inGameTimerTick + dt
+
+    if whisperTimer > whisperCooldown and whisperOnCooldown == true then 
+        whisperOnCooldown = false
+    end 
+    whisperTimer = whisperTimer + dt
 end 
 
 local function OnLoad()
@@ -136,7 +149,7 @@ local function OnLoad()
     realityCheckWnd = api.Interface:CreateEmptyWindow("realityCheckWnd", "UIParent")
     gameExitFrame = ADDON:GetContent(UIC.GAME_EXIT_FRAME)
     whisperSoundWnd = api.Interface:CreateEmptyWindow("whisperSoundWnd", "UIParent")
-    whisperSoundWnd:SetSounds("web_play_diary")
+    whisperSoundWnd:SetSounds("store")
 
     local laborTimer = realityCheckWnd:CreateChildWidget("label", "laborTimer", 0, true)
     laborTimer.style:SetAlign(ALIGN.LEFT)

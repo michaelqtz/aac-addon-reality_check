@@ -114,7 +114,7 @@ end
 
 local whisperOnCooldown = false
 local whisperTimer = 0
-local whisperCooldown = 10000
+local whisperCooldown = 1000
 
 local function playSoundOnIncomingWhisper(channel, unit, isHostile, name, message, speakerInChatBound, specifyName, factionName, trialPosition)
     local playerName = api.Unit:GetUnitNameById(api.Unit:GetUnitId("player"))

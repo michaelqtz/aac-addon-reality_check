@@ -115,19 +115,8 @@ end
 local whisperOnCooldown = false
 local whisperTimer = 0
 local whisperCooldown = 1000
-
-local function playSoundOnIncomingWhisper(channel, unit, isHostile, name, message, speakerInChatBound, specifyName, factionName, trialPosition)
-    local playerName = api.Unit:GetUnitNameById(api.Unit:GetUnitId("player"))
-    if playerName ~= name and tostring(channel) == "-3" then
-        if whisperOnCooldown == false then 
-            whisperSoundWnd:Show(true)
-            whisperSoundWnd:Show(false)            
-            whisperOnCooldown = true
-            whisperTimer = 0
-        end
-    end
-    return false
-end 
+local isMuted
+local whisperSound
 
 local inGameTimerTick = 0
 local inGameTimerTickRate = 300
@@ -148,8 +137,14 @@ local function OnLoad()
 	local settings = api.GetSettings("reality_check")
     realityCheckWnd = api.Interface:CreateEmptyWindow("realityCheckWnd", "UIParent")
     gameExitFrame = ADDON:GetContent(UIC.GAME_EXIT_FRAME)
+
+    -- Initialize settings
+    isMuted = settings.isMuted or false
+    whisperSound = settings.whisperSound or "store"
+    settings.isMuted = isMuted
+    settings.whisperSound = whisperSound
     whisperSoundWnd = api.Interface:CreateEmptyWindow("whisperSoundWnd", "UIParent")
-    whisperSoundWnd:SetSounds("store")
+    whisperSoundWnd:SetSounds(whisperSound)
 
     local laborTimer = realityCheckWnd:CreateChildWidget("label", "laborTimer", 0, true)
     laborTimer.style:SetAlign(ALIGN.LEFT)
@@ -164,6 +159,13 @@ local function OnLoad()
     ApplyTextColor(inGameTimer, FONT_COLOR.LABORPOWER_YELLOW)
     inGameTimer.style:SetFontSize(FONT_SIZE.LARGE)
     inGameTimer.style:SetShadow(true)
+    inGameTimer.bg = realityCheckWnd:CreateNinePartDrawable("ui/common/tab_list.dds", "background")
+	inGameTimer.bg:SetTextureInfo("bg_quest")
+	inGameTimer.bg:SetColor(0, 0, 0, 0.4)
+	inGameTimer.bg:AddAnchor("TOPRIGHT", "UIParent", -4, 5)
+    inGameTimer.bg:SetExtent(176, 16)
+   
+	-- inGameTimer.bg:AddAnchor("TOPRIGHT", "UIParent", 0, 30)
 
     local logOutLaborTimer = gameExitFrame:CreateChildWidget("label", "logOutLaborTimer", 0, true)
     logOutLaborTimer.style:SetAlign(ALIGN.MIDDLE)
@@ -171,8 +173,34 @@ local function OnLoad()
     ApplyTextColor(logOutLaborTimer, FONT_COLOR.DEFAULT)
     logOutLaborTimer:SetText("")
     logOutLaborTimer.style:SetShadow(true)
+
+
+    
     
     --- Event Handlers for main window
+    -- Functions for handling events
+    local function playSoundOnIncomingWhisper(channel, unit, isHostile, name, message, speakerInChatBound, specifyName, factionName, trialPosition)
+        local playerName = api.Unit:GetUnitNameById(api.Unit:GetUnitId("player"))
+        if playerName ~= name and tostring(channel) == "-3" and isMuted ~= true then
+            if whisperOnCooldown == false then 
+                whisperSoundWnd:Show(true)
+                whisperSoundWnd:Show(false)            
+                whisperOnCooldown = true
+                whisperTimer = 0
+            end
+        end
+    end 
+    local function checkForWhispersCommands(channel, unit, isHostile, name, message, speakerInChatBound, specifyName, factionName, trialPosition)
+        local playerName = api.Unit:GetUnitNameById(api.Unit:GetUnitId("player"))
+        if playerName == name and message == "!rc mute" then
+            api.Log:Info("[Reality Check] Whisper notification sound has been muted.")
+            isMuted = true
+        elseif playerName == name and message == "!rc unmute" then
+            api.Log:Info("[Reality Check] Whisper notification sound has been unmuted.")
+            isMuted = false
+        end 
+    end 
+    -- Handlers themselves
     function realityCheckWnd:OnEvent(event, ...)
         if event == "LABORPOWER_CHANGED" then
             if arg ~= nil then 
@@ -181,6 +209,7 @@ local function OnLoad()
         end
         if event == "CHAT_MESSAGE" then
             playSoundOnIncomingWhisper(unpack(arg))
+            checkForWhispersCommands(unpack(arg))
         end
     end
     realityCheckWnd:SetHandler("OnEvent", realityCheckWnd.OnEvent)
@@ -194,9 +223,14 @@ local function OnLoad()
 end
 
 local function OnUnload()
+    local settings = api.GetSettings("reality_check")
+    settings.isMuted = isMuted
+    settings.whisperSound = whisperSound
+    
 	api.On("UPDATE", function() return end)
     realityCheckWnd:ReleaseHandler("LABORPOWER_CHANGED")
     realityCheckWnd:ReleaseHandler("CHAT_MESSAGE")
+    realityCheckWnd:ReleaseHandler("OnEvent")
     realityCheckWnd:Show(false)
     whisperSoundWnd:Show(false)
     realityCheckWnd = nil
@@ -211,6 +245,8 @@ local function OnUnload()
         gameExitFrame.inGameTimer:SetText("")
         gameExitFrame.inGameTimer = nil    
     end
+
+    api.SaveSettings()
 end
 
 reality_check_addon.OnLoad = OnLoad

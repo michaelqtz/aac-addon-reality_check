@@ -3,7 +3,7 @@ local api = require("api")
 local reality_check_addon = {
 	name = "Reality Check",
 	author = "Michaelqt",
-	version = "1.2.2",
+	version = "1.3.0",
 	desc = "Time-related utilities for labor and in-game time."
 }
 
@@ -174,9 +174,14 @@ local function OnLoad()
     logOutLaborTimer:SetText("")
     logOutLaborTimer.style:SetShadow(true)
 
+    local browser = realityCheckWnd:CreateChildWidget("webbrowser", "browser", 0, true)
+    browser:AddAnchor("TOPRIGHT", "UIParent", -260, 25)
+    browser:SetExtent(45, 22)
+    browser:Clickable(false)
+    browser:SetURL("file:///" .. api.baseDir .. "/reality_check/ping.html")
+    browser:SetZoomLevel(10)
+    realityCheckWnd.browser = browser
 
-    
-    
     --- Event Handlers for main window
     -- Functions for handling events
     local function playSoundOnIncomingWhisper(channel, unit, isHostile, name, message, speakerInChatBound, specifyName, factionName, trialPosition)

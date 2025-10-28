@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Check</title>
+</head>
+<style>
+    #pingNumber {
+        font-size: 160px;
+        margin: 0;
+    }
+</style>
+<body onload="initializePingCheck()">
+    <p id="pingNumber">###ms</p>
+    <img id="hiddenImage" src="" alt="hidden" style="display: none;">
+</body>
+    <script>
+        var start = new Date().getTime();
+        function initializePingCheck() {
+            var hiddenImage = document.getElementById('hiddenImage');
+            var pingNumber = document.getElementById('pingNumber');
+            hiddenImage.onerror = imageFailedToLoad;
+            function changeImageURL() {
+                start = new Date().getTime();
+                hiddenImage.src = 'http://ca-ovh-beauharnois-01-10g.nperf.net' + start;
+            }
+            function imageFailedToLoad() {
+                var end = new Date().getTime();
+                var time = end - start;
+                if (time < 100) {
+                    time = ' ' + time;
+                }
+                pingNumber.innerHTML = time + 'ms';
+            }
+            changeImageURL();
+            setInterval(function () {
+                changeImageURL();
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

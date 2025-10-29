@@ -3,8 +3,8 @@ local api = require("api")
 local reality_check_addon = {
 	name = "Reality Check",
 	author = "Michaelqt",
-	version = "1.3.0",
-	desc = "Time-related utilities for labor and in-game time."
+	version = "1.3.1",
+	desc = "Utilities for labor, in-game time, ping, whispers."
 }
 
 local LABORPOINT_CAP = 10000
@@ -181,6 +181,7 @@ local function OnLoad()
     browser:SetURL("file:///" .. api.baseDir .. "/reality_check/ping.html")
     browser:SetZoomLevel(10)
     realityCheckWnd.browser = browser
+    -- TODO: Disabling ping for now due to accuracy issues
 
     --- Event Handlers for main window
     -- Functions for handling events

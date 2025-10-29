@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <meta name="viewport" content="width=1080, initial-scale=1.0"> -->
     <title>Ping Check</title>
 </head>
 <style>
     #pingNumber {
-        font-size: 160px;
-        margin: 0;
+        font-size: 20px;
+        margin: 0px;
     }
 </style>
 <body onload="initializePingCheck()">
@@ -33,10 +33,20 @@
                     time = ' ' + time;
                 }
                 pingNumber.innerHTML = time + 'ms';
+                
+            }
+            function setPingNumberFontsize() {
+                if (window.innerHeight < 100) {
+                    document.getElementById('pingNumber').style.fontSize = '128px';
+                } else {
+                    document.getElementById('pingNumber').style.fontSize = '160px';
+                }
             }
             changeImageURL();
+            setPingNumberFontsize();
             setInterval(function () {
                 changeImageURL();
+                setPingNumberFontsize();
             }, 1000);
         }
     </script>

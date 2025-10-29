@@ -12,6 +12,11 @@ local LABORPOINT_REGEN_PER_5_MIN = 40
 local WARNING_MINUTES_ORANGE = 120
 local WARNING_MINUTES_RED = 30
 
+local RESIZE_BROWSER_WAIT = 5
+
+
+local browserResized = false
+local browserResizeTimer = 0
 local realityCheckWnd
 local gameExitFrame
 local whisperSoundWnd
@@ -82,6 +87,20 @@ local function updateLaborTimer(diff, laborPower)
     end 
 end 
 
+local function resizeBrowser() 
+    if browserResized == false then 
+        browserResizeTimer = browserResizeTimer + 1
+        if browserResizeTimer >= RESIZE_BROWSER_WAIT then 
+            if realityCheckWnd.browser ~= nil then 
+                realityCheckWnd.browser:SetExtent(45, 22)
+                realityCheckWnd.browser:SetURL("file:///" .. api.baseDir .. "/reality_check/ping.html")
+                realityCheckWnd.browser:Show(true)
+                browserResized = true
+            end 
+        end 
+    end
+end 
+
 local function updateInGameTimer()
     if realityCheckWnd.inGameTimer ~= nil then 
         local isAm, hour, minute = api.Time:GetGameTime()
@@ -123,6 +142,7 @@ local inGameTimerTickRate = 300
 local function OnUpdate(dt)
     if inGameTimerTick > inGameTimerTickRate then
         updateInGameTimer()
+        -- resizeBrowser()
         inGameTimerTick = 0
     end 
     inGameTimerTick = inGameTimerTick + dt
@@ -178,9 +198,9 @@ local function OnLoad()
     browser:AddAnchor("TOPRIGHT", "UIParent", -260, 25)
     browser:SetExtent(45, 22)
     browser:Clickable(false)
-    browser:SetURL("file:///" .. api.baseDir .. "/reality_check/ping.html")
-    browser:SetZoomLevel(10)
+    browser:SetZoomLevel(1)
     realityCheckWnd.browser = browser
+    browser:Show(false)
     -- TODO: Disabling ping for now due to accuracy issues
 
     --- Event Handlers for main window
